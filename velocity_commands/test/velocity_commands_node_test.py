@@ -38,4 +38,4 @@ class TestVelocityCommand(unittest.TestCase):
 if __name__ == '__main__':
     rospy.init_node('velocity_commands_node_test')
     rostest.rosrun(PKG, 'velocity_commands_node_test', TestVelocityCommand)
-    rospy.spin()
+rospy.spin()

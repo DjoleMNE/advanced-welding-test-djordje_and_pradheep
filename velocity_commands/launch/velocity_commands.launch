@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<launch>
+    <node pkg="velocity_commands" type="velocity_commands_node" name="velocity_commands_node" output="screen">
+    </node>
+</launch>

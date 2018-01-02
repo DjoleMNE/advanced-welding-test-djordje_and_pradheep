@@ -34,11 +34,11 @@ SOFTWARE.
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "awt_trajectory_generator_node");
-    std::string type;
+    std::string type, side;
     double phase = 0;
     double amplitude = 0;
-    int num_steps = 0;
-    double time_step = 0;
+    int num_steps = 0, side_gain = 1, cycles = 1;
+    double time_step = 0, loop_freq = 0, x_unit_gain = 0, y_unit_gain = 0;
     Eigen::MatrixXd velocity_matrix;
     std::string root_frame = "arm_link_0";
 
@@ -48,6 +48,11 @@ int main(int argc, char **argv)
     node_handle.getParam("amplitude", amplitude);
     node_handle.getParam("num_steps", num_steps);
     node_handle.getParam("time_step", time_step);
+    node_handle.getParam("loop_freq", loop_freq);
+    node_handle.getParam("x_unit_gain", x_unit_gain);
+    node_handle.getParam("y_unit_gain", y_unit_gain);
+    node_handle.getParam("side", side);
+    node_handle.getParam("cycles", cycles);
 
     geometry_msgs::TwistStamped velocity;
 
@@ -61,19 +66,25 @@ int main(int argc, char **argv)
                                 num_steps,
                                 time_step,
                                 velocity_matrix);
+    if (side == "right") side_gain = -1;
+    else side_gain = 1;
 
     ROS_INFO_STREAM("The publisher need some time to connect to subscribers.");
     while(!velocity_publisher.getNumSubscribers() > 0){}
     ROS_INFO_STREAM("The publisher has connected to subscribers.");
 
 
-    ros::Rate loop_rate(1/time_step);
+    ros::Rate loop_rate(loop_freq);
     velocity.header.frame_id = root_frame;
+    int step_counter = 0;
 
-    for (int i = 0;  i < velocity_matrix.rows(); i++)
+    for (int i = 0;  i < velocity_matrix.rows() * cycles; i++)
     {
-        velocity.twist.linear.x = velocity_matrix(i, 0);
-        velocity.twist.linear.y = velocity_matrix(i, 1);
+        if (step_counter == velocity_matrix.rows()) step_counter = 0;
+        std::cout << step_counter << '\n';
+        velocity.twist.linear.x = velocity_matrix(step_counter, 1)/x_unit_gain;
+        velocity.twist.linear.y = side_gain * velocity_matrix(step_counter, 0)/y_unit_gain;
+        step_counter++;
         velocity_publisher.publish(velocity);
         ros::spinOnce();
         loop_rate.sleep();

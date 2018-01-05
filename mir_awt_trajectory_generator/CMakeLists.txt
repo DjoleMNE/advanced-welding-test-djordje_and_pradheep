@@ -6,6 +6,7 @@ find_package(catkin REQUIRED COMPONENTS
   #kdl_parser
   roscpp
   rospy
+  interactive_markers
   std_msgs
 )
 

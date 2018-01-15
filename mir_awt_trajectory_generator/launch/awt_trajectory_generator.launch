@@ -1,5 +1,9 @@
 <?xml version="1.0"?>
 <launch>
+    <arg name="arm_name" default="arm_1"/>
+    <!-- upload arm and gripper controller parameters -->
+    <rosparam file="$(find youbot_gazebo_control)/config/$(arg arm_name)_controller.yaml" command="load" ns="$(arg arm_name)"/> 
+
     <node pkg="mir_awt_trajectory_generator" type="awt_trajectory_generator" name="awt_trajectory_generator_node" output="screen">
     <param name="type" value="sine"/>
     <param name="phase" value="0.0"/>
@@ -12,4 +16,7 @@
     <param name="side" value="right1"/>
     <param name="cycles" value="2"/>
     </node>
+    <node pkg="mir_awt_trajectory_generator" type="trajectory_interactive_markers_node.py" name="trajectory_interactive_markers_node" output="screen">
+    </node>
+
 </launch>

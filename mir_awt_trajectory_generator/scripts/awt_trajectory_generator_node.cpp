@@ -2,17 +2,14 @@
 Created on: December, 2017
 Author(s): Djordje Vukcevic, Pradheep Padmanabhan
 Copyright (c) [2017]
-
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions:
-
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
-
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -30,6 +27,7 @@ SOFTWARE.
 #include <sstream>
 #include <Eigen/Dense>
 #include <awt_trajectory_generator.h>
+#include "visualization_msgs/Marker.h"
 
 int main(int argc, char **argv)
 {
@@ -59,6 +57,9 @@ int main(int argc, char **argv)
     ros::Publisher velocity_publisher = \
     node_handle.advertise<geometry_msgs::TwistStamped>("/arm_1/arm_controller/cartesian_velocity_command", 100);
 
+    ros::Publisher marker_pub = \
+    node_handle.advertise<visualization_msgs::Marker>("visualization_marker", 1000 );
+
     traj_gen::AWT_Trajectory_Generator generator;
     generator.generate_trajectory(type,
                                 phase,
@@ -77,7 +78,36 @@ int main(int argc, char **argv)
     ros::Rate loop_rate(loop_freq);
     velocity.header.frame_id = root_frame;
     int step_counter = 0;
-
+    visualization_msgs::Marker marker;
+    marker.id = 0;
+    for (int i = 0; i < velocity_matrix.rows()*cycles; i++)
+    {
+        if (step_counter == velocity_matrix.rows()) step_counter = 0;
+        marker.header.frame_id = "arm_link_5";
+        marker.type = visualization_msgs::Marker::SPHERE;
+        marker.action = visualization_msgs::Marker::ADD;
+        marker.pose.position.x = (velocity_matrix(step_counter, 1)/x_unit_gain)*0.01;
+        marker.pose.position.y = (side_gain * velocity_matrix(step_counter, 0)/y_unit_gain)*0.01;
+        marker.pose.position.z = 0.0;
+        // std::cout<<marker.pose.position.x; 
+        marker.pose.orientation.x = 0.0;
+        marker.pose.orientation.y = 0.0;
+        marker.pose.orientation.z = 0.0;
+        marker.pose.orientation.w = 0.0;
+        marker.scale.x = 0.05;
+        marker.scale.y = 0.04;
+        marker.scale.z = 0.03;
+        marker.color.r = 0.0;
+        marker.color.g = 2.0;
+        marker.color.b = 0.0;
+        marker.color.a = 1.0;
+        marker.lifetime = ros::Duration();
+        marker.id+=1;
+        std::cout<<"Marker id"<<marker.id<<std::endl;
+        step_counter++;
+        marker_pub.publish(marker);
+        loop_rate.sleep();
+    } 
     for (int i = 0;  i < velocity_matrix.rows() * cycles; i++)
     {
         if (step_counter == velocity_matrix.rows()) step_counter = 0;

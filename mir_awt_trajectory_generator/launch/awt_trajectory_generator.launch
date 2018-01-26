@@ -10,8 +10,8 @@
     <param name="loop_freq" value="4"/>
     <param name="x_unit_gain" value="8"/>
     <param name="y_unit_gain" value="3"/>
-    <param name="side" value="right1"/>
-    <param name="cycles" value="2"/>
+    <param name="side" value="right"/>
+    <param name="cycles" value="1"/>
     </node>
 
 </launch>

@@ -58,9 +58,31 @@ int main(int argc, char **argv)
     node_handle.advertise<geometry_msgs::TwistStamped>("/arm_1/arm_controller/cartesian_velocity_command", 100);
 
     ros::Publisher marker_pub = \
-    node_handle.advertise<visualization_msgs::Marker>("visualization_marker", 1000 );
-
+    node_handle.advertise<visualization_msgs::Marker>("visualization_marker", 100);
     traj_gen::AWT_Trajectory_Generator generator;
+
+    double step_size_x;
+    Eigen::MatrixXd wave;
+
+    if (type == "sine"){
+        generator.generate_sine_wave(
+                    phase,
+                    amplitude,
+                    num_steps,
+                    wave,
+                    step_size_x);
+    }
+
+    else if (type == "square" ){
+        generator.generate_square_wave(
+                    phase,
+                    amplitude,
+                    num_steps,
+                    wave,
+                    step_size_x);
+    }
+
+
     generator.generate_trajectory(type,
                                 phase,
                                 amplitude,
@@ -70,9 +92,13 @@ int main(int argc, char **argv)
     if (side == "right") side_gain = -1;
     else side_gain = 1;
 
-    ROS_INFO_STREAM("The publisher need some time to connect to subscribers.");
+    ROS_INFO_STREAM("The marker publisher need some time to connect to subscribers.");
+    while(!marker_pub.getNumSubscribers() > 0){}
+    ROS_INFO_STREAM("The marker publisher has connected to subscribers.");
+
+    ROS_INFO_STREAM("The velocity publisher need some time to connect to subscribers.");
     while(!velocity_publisher.getNumSubscribers() > 0){}
-    ROS_INFO_STREAM("The publisher has connected to subscribers.");
+    ROS_INFO_STREAM("The velocity publisher has connected to subscribers.");
 
 
     ros::Rate loop_rate(loop_freq);
@@ -80,38 +106,41 @@ int main(int argc, char **argv)
     int step_counter = 0;
     visualization_msgs::Marker marker;
     marker.id = 0;
+
     for (int i = 0; i < velocity_matrix.rows()*cycles; i++)
     {
         if (step_counter == velocity_matrix.rows()) step_counter = 0;
         marker.header.frame_id = "arm_link_5";
         marker.type = visualization_msgs::Marker::SPHERE;
         marker.action = visualization_msgs::Marker::ADD;
-        marker.pose.position.x = (velocity_matrix(step_counter, 1)/x_unit_gain)*0.01;
-        marker.pose.position.y = (side_gain * velocity_matrix(step_counter, 0)/y_unit_gain)*0.01;
+        marker.pose.position.x = (wave(step_counter, 1)/x_unit_gain)*0.05;
+        marker.pose.position.y = (side_gain * wave(step_counter, 0)/y_unit_gain)*0.1;
         marker.pose.position.z = 0.0;
-        // std::cout<<marker.pose.position.x; 
+        std::cout << "Marker" << '\n';
+        std::cout<<marker.pose.position.x<<"\n";
+        std::cout<<marker.pose.position.y<<"\n";
         marker.pose.orientation.x = 0.0;
         marker.pose.orientation.y = 0.0;
         marker.pose.orientation.z = 0.0;
         marker.pose.orientation.w = 0.0;
-        marker.scale.x = 0.05;
-        marker.scale.y = 0.04;
-        marker.scale.z = 0.03;
+        marker.scale.x = 0.02;
+        marker.scale.y = 0.01;
+        marker.scale.z = 0.008;
         marker.color.r = 0.0;
         marker.color.g = 2.0;
         marker.color.b = 0.0;
         marker.color.a = 1.0;
         marker.lifetime = ros::Duration();
         marker.id+=1;
-        std::cout<<"Marker id"<<marker.id<<std::endl;
         step_counter++;
         marker_pub.publish(marker);
         loop_rate.sleep();
-    } 
+    }
+
+    step_counter = 0;
     for (int i = 0;  i < velocity_matrix.rows() * cycles; i++)
     {
         if (step_counter == velocity_matrix.rows()) step_counter = 0;
-        std::cout << step_counter << '\n';
         velocity.twist.linear.x = velocity_matrix(step_counter, 1)/x_unit_gain;
         velocity.twist.linear.y = side_gain * velocity_matrix(step_counter, 0)/y_unit_gain;
         step_counter++;
